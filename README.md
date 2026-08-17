@@ -259,7 +259,7 @@ shared office IP) do not create false positives.
 | New device (browser/agent never signed in) | +0.35 | identity | Ambiguous — legit device change |
 | New location (first sign-in from a country) | +0.30 | identity | Ambiguous — legit travel |
 | Impossible travel (2 countries < 6h apart) | +0.50 | attack | Strong account-takeover indicator |
-| High attempt velocity (≥ `maxFailedAttempts` failed) | +0.20 | attack | Brute-force indicator |
+| High attempt velocity (≥ `maxFailedAttempts` failed) | +0.20 | attack | Brute-force indicator (skipped for admins) |
 | Credential stuffing (≥ 4 distinct failed emails/IP) | +0.40 | attack | Automated attack pattern |
 | Unusual sign-in hour (vs. typical pattern) | +0.20 | weak | Never decisive on its own |
 
@@ -295,6 +295,12 @@ cannot hard-block on its own. The AI has a 3.5s timeout, and a counter
 Independent of risk scoring: if failed attempts for the email in 24h reach
 `maxFailedAttempts` (default 5, admin-configurable 1–100), sign-in is blocked
 for 24 hours. This threshold is also reused by the velocity heuristic.
+
+**Admin accounts are exempt**: the failed-attempts lockout and the velocity
+heuristic are skipped for users with `role = "admin"`, so an admin can never be
+locked out of their own account by failed password attempts. Other risk signals
+(impossible travel, credential stuffing from shared-IP attack patterns, new
+device/location) still apply to admins.
 
 ---
 
@@ -367,6 +373,9 @@ routes (`/api/risk`, `/api/admin/settings`) which call
     or consider raising `maxFailedAttempts`.
   - *Sign-in blocked: … stuffing / impossible travel* — genuine attack signals;
     investigate the IP before unblocking anything.
+- **Admin accounts are never locked out** by failed password attempts — the
+  account-lockout and velocity rules skip `role = "admin"`. An admin who
+  mistypes a password keeps access to their account.
 - **Shared IP / office networks** → several successful logins from one IP do
   *not* count as credential stuffing (only *failed* attempts do), so normal
   office use is fine.

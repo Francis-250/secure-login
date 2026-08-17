@@ -32,6 +32,7 @@ interface HeuristicResult {
 export interface AttemptContext {
   email: string;
   userId?: string | null;
+  role?: string | null;
   ipAddress?: string | null;
   userAgent?: string | null;
   country?: string | null;
@@ -116,6 +117,8 @@ function heuristicScore(
 
   const hasBaseline = history.length > 0;
 
+  const isAdmin = ctx.role === "admin";
+
   if (hasBaseline && ctx.userAgent) {
     const seen = history.some((a) => a.userAgent === ctx.userAgent);
     if (!seen) {
@@ -168,7 +171,7 @@ function heuristicScore(
     }
   }
 
-  if (recentCount >= maxFailedAttempts) {
+  if (!isAdmin && recentCount >= maxFailedAttempts) {
     attackScore += 0.2;
     score += 0.2;
     reasons.push(

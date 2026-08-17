@@ -124,7 +124,7 @@ export const auth = betterAuth({
         const info = extractRequestInfo(ctx);
         const user = await prisma.user.findUnique({
           where: { email },
-          select: { id: true },
+          select: { id: true, role: true },
         });
 
         const { maxFailedAttempts } = await getSettings();
@@ -133,7 +133,7 @@ export const auth = betterAuth({
           where: { email, success: false, createdAt: { gte: failedWindow } },
         });
 
-        if (failedCount >= maxFailedAttempts) {
+        if (user?.role !== "admin" && failedCount >= maxFailedAttempts) {
           await logLoginAttempt({
             email,
             userId: user?.id,
@@ -148,6 +148,7 @@ export const auth = betterAuth({
         const risk = await evaluateRisk({
           email,
           userId: user?.id,
+          role: user?.role,
           ...info,
         });
 
@@ -178,12 +179,13 @@ export const auth = betterAuth({
           const info = extractRequestInfo(ctx);
           const user = await prisma.user.findUnique({
             where: { email },
-            select: { id: true, twoFactorEnabled: true },
+            select: { id: true, role: true, twoFactorEnabled: true },
           });
 
           const risk = await evaluateRisk({
             email,
             userId: user?.id,
+            role: user?.role,
             ...info,
           });
 
