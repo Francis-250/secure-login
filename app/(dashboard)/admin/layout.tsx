@@ -1,26 +1,33 @@
-"use client";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import AdminHeader from "@/components/admin/admin-header";
+import AdminSidebar from "@/components/admin/admin-sidebar";
 
-import Header from "@/components/layout/header";
-import Sidebar from "@/components/layout/sidebar";
-import React, { useState } from "react";
-
-interface LayoutProps {
+export default async function AdminLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
+}) {
+  const session = await auth.api.getSession({ headers: await headers() });
 
-export default function Layout({ children }: LayoutProps) {
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+  if (!session) {
+    redirect("/auth/login");
+  }
 
-  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+  if (session.user.role !== "admin") {
+    redirect("/user");
+  }
 
   return (
-    <main className="h-screen">
-      <div className="flex items-start h-full">
-        <Sidebar isOpen={isSidebarOpen} />
-        <div className="w-full h-full">
-          <Header
-            isSidebarOpen={isSidebarOpen}
-            onToggleSidebar={toggleSidebar}
+    <main className="min-h-screen bg-slate-50 dark:bg-neutral-950">
+      <div className="flex items-start">
+        <AdminSidebar />
+        <div className="min-w-0 flex-1">
+          <AdminHeader
+            name={session.user.name}
+            email={session.user.email}
+            image={session.user.image}
           />
           <section className="p-6">{children}</section>
         </div>

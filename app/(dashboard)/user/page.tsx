@@ -1,5 +1,5 @@
-import React from "react";
+import UserDashboard from "@/components/user/user-dashboard";
 
-export default function UserDashboard() {
-  return <div>UserDashboard</div>;
+export default function UserPage() {
+  return <UserDashboard />;
 }

@@ -18,7 +18,9 @@ export const sendEmail = async ({ to, subject, html, text }: EmailOptions) => {
     }
 
     if (!senderEmail) {
-      console.error("Email error: BREVO_SENDER_EMAIL is not configured");
+      console.error(
+        "Email error: BREVO_SENDER_EMAIL (or BREVO_EMAIL_USER) is not configured in .env",
+      );
       return false;
     }
 

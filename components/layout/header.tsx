@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import React, { useState, useRef, useEffect } from "react";
 
 const PROFILE_MENU = [
@@ -8,7 +7,7 @@ const PROFILE_MENU = [
     label: "My Profile",
     icon: (
       <svg
-        className="size-4.5 fill-current"
+        className="size-[18px] fill-current"
         aria-hidden="true"
         viewBox="0 0 512 512"
       >
@@ -21,7 +20,7 @@ const PROFILE_MENU = [
     label: "Account Settings",
     icon: (
       <svg
-        className="size-4.5 fill-current"
+        className="size-[18px] fill-current"
         aria-hidden="true"
         viewBox="0 0 32 32"
       >
@@ -36,7 +35,7 @@ const PROFILE_MENU = [
     label: "Billing & Payments",
     icon: (
       <svg
-        className="size-4.5 fill-current"
+        className="size-[18px] fill-current"
         aria-hidden="true"
         viewBox="0 0 512 512"
       >
@@ -49,7 +48,7 @@ const PROFILE_MENU = [
     label: "Logout",
     icon: (
       <svg
-        className="size-4.5 fill-current"
+        className="size-[18px] fill-current"
         aria-hidden="true"
         viewBox="0 0 6.35 6.35"
       >
@@ -104,7 +103,7 @@ export default function Header({
           <span className="sr-only">Toggle sidebar menu</span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="size-4.5 fill-slate-900 dark:fill-slate-50"
+            className="size-[18px] fill-slate-900 dark:fill-slate-50"
             viewBox="0 0 20 20"
             aria-hidden="true"
           >
@@ -116,12 +115,26 @@ export default function Header({
           </svg>
         </button>
 
-        <h1 className="text-xl text-slate-900 font-bold dark:text-slate-50">
-          Dashboard
-        </h1>
+        <form
+          role="search"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-white dark:bg-neutral-800 outline-1 -outline-offset-1 outline-slate-300 dark:outline-neutral-700 focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-blue-600 flex-1 max-w-md"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 192.904 192.904"
+            className="size-4 fill-slate-400"
+            aria-hidden="true"
+          >
+            <path d="m190.707 180.101-47.078-47.077c11.702-14.072 18.752-32.142 18.752-51.831C162.381 36.423 125.959 0 81.191 0 36.422 0 0 36.423 0 81.193c0 44.767 36.422 81.187 81.191 81.187 19.688 0 37.759-7.049 51.831-18.751l47.079 47.078a7.474 7.474 0 0 0 5.303 2.197 7.498 7.498 0 0 0 5.303-12.803zM15 81.193C15 44.694 44.693 15 81.191 15c36.497 0 66.189 29.694 66.189 66.193 0 36.496-29.692 66.187-66.189 66.187C44.693 147.38 15 117.689 15 81.193z" />
+          </svg>
+          <input
+            type="search"
+            placeholder="Search..."
+            className="text-sm text-slate-900 dark:text-slate-50 w-full outline-none bg-transparent"
+          />
+        </form>
 
         <div className="flex items-center flex-wrap gap-5 ml-auto">
-          {/* Notification Bell */}
           <a
             href="#"
             className="relative block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
@@ -138,7 +151,6 @@ export default function Header({
             <span className="absolute top-0 right-0 size-2.5 bg-red-500 rounded-full"></span>
           </a>
 
-          {/* Profile Dropdown */}
           <div className="relative w-max flex flex-col" ref={profileRef}>
             <button
               type="button"
@@ -147,12 +159,10 @@ export default function Header({
               aria-expanded={isProfileOpen}
               className="border border-slate-300 rounded-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             >
-              <Image
+              <img
                 src="https://readymadeui.com/team-1.webp"
                 alt="profile-pic"
                 className="size-9 rounded-full"
-                width={36}
-                height={36}
               />
             </button>
 

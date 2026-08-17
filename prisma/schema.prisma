@@ -25,6 +25,7 @@ model User {
   sessions            Session[]
   accounts            Account[]
   twofactors          TwoFactor[]
+  loginAttempts       LoginAttempt[]
 
   @@unique([email])
   @@unique([phoneNumber])
@@ -103,4 +104,26 @@ model RateLimit {
 
   @@unique([key])
   @@map("rateLimit")
+}
+
+model LoginAttempt {
+  id         String    @id
+  userId     String?
+  email      String
+  ipAddress  String?
+  userAgent  String?
+  country    String?
+  city       String?
+  success    Boolean   @default(false)
+  riskScore  Float?
+  riskReason String?
+  createdAt  DateTime  @default(now())
+
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([email])
+  @@index([ipAddress])
+  @@index([createdAt])
+  @@map("loginAttempt")
 }

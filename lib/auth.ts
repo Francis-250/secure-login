@@ -1,4 +1,6 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth";
+import { createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
 import {
@@ -9,6 +11,20 @@ import {
   twoFactor,
 } from "better-auth/plugins";
 import { sendEmail } from "./brevo";
+import { evaluateRisk, logLoginAttempt } from "./risk";
+
+function extractRequestInfo(ctx: {
+  request?: Request;
+}) {
+  const headers = ctx.request?.headers;
+  const userAgent = headers?.get("user-agent") ?? null;
+  const xff = headers?.get("x-forwarded-for");
+  const ipAddress = xff ? xff.split(",")[0].trim() : headers?.get("x-real-ip") ?? null;
+  const country =
+    headers?.get("cf-ipcountry") ?? headers?.get("x-vercel-ip-country") ?? null;
+  const city = headers?.get("x-vercel-ip-city") ?? null;
+  return { ipAddress, userAgent, country, city };
+}
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -19,14 +35,10 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     maxPasswordLength: 100,
     requireEmailVerification: true,
-
-    sendResetPassword: async ({ user, url }) => {
-      await sendEmail({
-        to: user.email,
-        subject: "Reset your password — SECURE LOGIN",
-        html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
-      });
-    },
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
   },
   socialProviders: {
     github: {
@@ -72,11 +84,122 @@ export const auth = betterAuth({
     }),
     twoFactor({
       issuer: "SECURE LOGIN",
+      accountLockout: {
+        enabled: true,
+        maxFailedAttempts: 5,
+        durationSeconds: 900,
+      },
     }),
   ],
   rateLimit: {
     window: 60,
     max: 5,
     storage: "database",
+  },
+  hooks: {
+    before: createAuthMiddleware(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      async (ctx: any) => {
+        if (ctx.path !== "/sign-in/email") return;
+        const email: string | undefined = ctx.body?.email;
+        if (!email) return;
+
+        const info = extractRequestInfo(ctx);
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+
+        const risk = await evaluateRisk({
+          email,
+          userId: user?.id,
+          ...info,
+        });
+
+        if (risk.level === "high") {
+          await logLoginAttempt({
+            email,
+            userId: user?.id,
+            ...info,
+            success: false,
+            riskScore: risk.score,
+            riskReason: risk.reasons.join("; "),
+          });
+          throw new APIError("FORBIDDEN", {
+            message: `Sign-in blocked: ${risk.reasons.join("; ")}`,
+          });
+        }
+      },
+    ),
+    after: createAuthMiddleware(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      async (ctx: any) => {
+        if (ctx.path === "/sign-in/email") {
+          const email: string | undefined = ctx.body?.email;
+          if (!email) return;
+
+          const returned: unknown = ctx.context?.returned;
+          const failed = returned instanceof APIError;
+          const info = extractRequestInfo(ctx);
+          const user = await prisma.user.findUnique({
+            where: { email },
+            select: { id: true },
+          });
+
+          const risk = await evaluateRisk({
+            email,
+            userId: user?.id,
+            ...info,
+          });
+
+          await logLoginAttempt({
+            email,
+            userId: user?.id,
+            ...info,
+            success: !failed,
+            riskScore: risk.score,
+            riskReason:
+              risk.level === "low" ? null : risk.reasons.join("; "),
+          });
+          return;
+        }
+
+        if (ctx.path.startsWith("/callback/")) {
+          const user = ctx.context?.newSession?.user as
+            | { id: string; email: string }
+            | undefined;
+          if (user?.email) {
+            const info = extractRequestInfo(ctx);
+            await logLoginAttempt({
+              email: user.email,
+              userId: user.id,
+              ...info,
+              success: true,
+            });
+          }
+          return;
+        }
+
+        if (ctx.path === "/two-factor/verify-totp") {
+          const returned = ctx.context?.returned as
+            | { status?: boolean }
+            | undefined;
+          if (returned?.status === true) {
+            const user = ctx.context?.newSession?.user as
+              | { id: string; email: string }
+              | undefined;
+            if (user?.email) {
+              const info = extractRequestInfo(ctx);
+              await logLoginAttempt({
+                email: user.email,
+                userId: user.id,
+                ...info,
+                success: true,
+              });
+            }
+          }
+        }
+      },
+    ),
   },
 });

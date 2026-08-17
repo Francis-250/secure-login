@@ -1,6 +1,12 @@
 import RegisterForm from "@/components/auth/register-form";
-import React from "react";
 
 export default function RegisterPage() {
-  return <RegisterForm />;
+  return (
+    <>
+      <RegisterForm
+        githubEnabled={!!process.env.GITHUB_CLIENT_ID}
+        googleEnabled={!!process.env.GOOGLE_CLIENT_ID}
+      />
+    </>
+  );
 }
