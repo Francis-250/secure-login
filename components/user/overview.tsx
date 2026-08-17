@@ -225,7 +225,8 @@ export default function Overview() {
               </span>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {user.name ?? "No display name"} · {user.username || "no username"}
+              {user.name ?? "No display name"} ·{" "}
+              {user.username || "no username"}
             </p>
           </div>
         </div>
@@ -318,7 +319,7 @@ export default function Overview() {
         )}
       </div>
 
-      <div className={cardClass}>
+      {/* <div className={cardClass}>
         <SectionTitle
           icon={<Smartphone className="size-5" />}
           title="Phone number"
@@ -414,7 +415,7 @@ export default function Overview() {
             </div>
           </form>
         )}
-      </div>
+      </div> */}
 
       <div className="rounded-lg border border-red-300 bg-white p-6 dark:border-red-900/50 dark:bg-neutral-900">
         <div className="mb-4 flex items-center gap-3">
@@ -575,19 +576,19 @@ function ProfileForm({
           />
         </div>
       </div>
-      <div>
-        <label htmlFor="image" className={labelClass}>
-          Profile image URL
-        </label>
-        <input
-          id="image"
-          type="url"
-          value={image}
-          onChange={(e) => setImage(e.target.value)}
-          placeholder="https://…"
-          className={inputClass}
-        />
-      </div>
+      {/* <div>
+          <label htmlFor="image" className={labelClass}>
+            Profile image URL
+          </label>
+          <input
+            id="image"
+            type="url"
+            value={image}
+            onChange={(e) => setImage(e.target.value)}
+            placeholder="https://…"
+            className={inputClass}
+          />
+        </div> */}
       <div className="flex justify-end">
         <button
           type="submit"

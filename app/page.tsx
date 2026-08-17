@@ -25,9 +25,9 @@ const FEATURES = [
     desc: "Google Authenticator. A new code every 30 seconds, generated offline.",
   },
   {
-    code: "TEL",
-    name: "Phone verification",
-    desc: "A second channel tied to a number only you control.",
+    code: "RISK",
+    name: "Behavior-based step-up",
+    desc: "Repeated failed attempts trigger mandatory verification — before a session ever opens.",
   },
   {
     code: "RBAC",
@@ -41,9 +41,10 @@ function AuthRing() {
   const [code] = useState("247 391");
 
   useEffect(() => {
-    const id = setInterval(() => {
-      setSeconds((s) => (s <= 0 ? 30 : s - 1));
-    }, 1000);
+    const id = setInterval(
+      () => setSeconds((s) => (s <= 0 ? 30 : s - 1)),
+      1000,
+    );
     return () => clearInterval(id);
   }, []);
 
@@ -52,7 +53,7 @@ function AuthRing() {
   const circumference = 2 * Math.PI * r;
 
   return (
-    <div className="relative flex h-55 w-55  items-center justify-center">
+    <div className="relative flex h-55 w-55 items-center justify-center">
       <svg
         width="220"
         height="220"
@@ -64,7 +65,7 @@ function AuthRing() {
           cy="60"
           r={r}
           fill="none"
-          stroke="rgba(231,228,217,0.12)"
+          className="stroke-slate-200 dark:stroke-neutral-800"
           strokeWidth="1.5"
         />
         <circle
@@ -72,7 +73,7 @@ function AuthRing() {
           cy="60"
           r={r}
           fill="none"
-          stroke="#C9A227"
+          className="stroke-sky-600 dark:stroke-sky-400"
           strokeWidth="1.5"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - pct)}
@@ -81,13 +82,13 @@ function AuthRing() {
         />
       </svg>
       <div className="absolute flex flex-col items-center gap-2">
-        <span className="font-mono text-[10px] tracking-[0.25em] text-[#8A8F86]">
+        <span className="font-mono text-[10px] tracking-[0.25em] text-slate-500 dark:text-neutral-400">
           SECURE LOGIN
         </span>
-        <span className="font-mono text-[28px] font-medium tracking-widest text-[#E7E4D9]">
+        <span className="font-mono text-[28px] font-medium tracking-widest text-slate-900 dark:text-slate-50">
           {code}
         </span>
-        <span className="font-mono text-[10px] tracking-[0.15em] text-[#3E6F66]">
+        <span className="font-mono text-[10px] tracking-[0.15em] text-emerald-700 dark:text-emerald-400">
           EXPIRES 0:{seconds.toString().padStart(2, "0")}
         </span>
       </div>
@@ -97,92 +98,106 @@ function AuthRing() {
 
 export default function HomePage() {
   return (
-    <>
-      <main
-        className="min-h-screen w-full bg-[#14181D] text-[#E7E4D9]"
-        style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}
-      >
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8">
-          <span className="font-mono text-[12px] tracking-[0.3em] text-[#8A8F86]">
-            ACCESS CONTROL SYSTEM
-          </span>
+    <main className="min-h-screen w-full bg-white text-slate-900 dark:bg-neutral-950 dark:text-slate-50">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8">
+        <span className="font-mono text-[12px] tracking-[0.3em] text-slate-500 dark:text-neutral-400">
+          SECURE LOGIN
+        </span>
+        <Link
+          href="/auth/login"
+          className="border border-sky-600 px-4 py-2 font-mono text-[12px] tracking-widest text-sky-600 transition-colors hover:bg-sky-600 hover:text-white dark:border-sky-400 dark:text-sky-400 dark:hover:bg-sky-400 dark:hover:text-neutral-950"
+        >
+          SIGN IN →
+        </Link>
+      </div>
+
+      <section className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-14 px-6 py-16 md:grid-cols-[1.2fr_1fr] md:py-24">
+        <div>
+          <h1 className="font-serif text-[40px] font-medium leading-[1.1] text-slate-900 dark:text-slate-50 md:text-[56px]">
+            Built so a stolen
+            <br />
+            password isn&apos;t enough.
+          </h1>
+          <p className="mt-6 max-w-md text-[16px] leading-[1.6] text-slate-600 dark:text-neutral-400">
+            Email, OAuth, one-time codes, and authenticator-app verification —
+            layered together, every sign-in logged, every session revocable.
+          </p>
           <Link
             href="/auth/login"
-            className="border border-[#C9A227] px-4 py-2 font-mono text-[12px] tracking-widest text-[#C9A227] transition-colors hover:bg-[#C9A227] hover:text-[#14181D]"
+            className="mt-9 inline-block bg-sky-600 px-7 py-3 font-mono text-[13px] font-medium tracking-widest text-white transition-opacity hover:opacity-90 dark:bg-sky-400 dark:text-neutral-950"
           >
-            SIGN IN →
+            CONTINUE TO SIGN IN
           </Link>
         </div>
-        <section className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-14 px-6 py-16 md:grid-cols-[1.2fr_1fr] md:py-24">
-          <div>
-            <h1
-              className="text-[40px] leading-[1.1] text-[#E7E4D9] md:text-[56px]"
-              style={{ fontFamily: "'Fraunces', serif", fontWeight: 500 }}
-            >
-              Built so a stolen
-              <br />
-              password isn&apos;t enough.
-            </h1>
-            <p className="mt-6 max-w-md text-[16px] leading-[1.6] text-[#B7B4A6]">
-              Email, OAuth, one-time codes, and authenticator-app verification —
-              layered together, every sign-in logged, every session revocable.
-            </p>
-            <Link
-              href="/login"
-              className="mt-9 inline-block bg-[#C9A227] px-7 py-3 font-mono text-[13px] font-medium tracking-widest text-[#14181D] transition-opacity hover:opacity-90"
-            >
-              CONTINUE TO SIGN IN
-            </Link>
-          </div>
 
-          <div className="flex justify-center md:justify-end">
-            <AuthRing />
-          </div>
-        </section>
-
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="h-px w-full bg-[rgba(231,228,217,0.12)]" />
+        <div className="flex justify-center md:justify-end">
+          <AuthRing />
         </div>
+      </section>
 
-        <section className="mx-auto max-w-5xl px-6 py-16">
-          <span className="font-mono text-[12px] tracking-[0.3em] text-[#8A8F86]">
-            WHAT&apos;S PROTECTING THIS ACCOUNT
-          </span>
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="h-px w-full bg-slate-200 dark:bg-neutral-800" />
+      </div>
 
-          <div className="mt-8">
+      <section className="mx-auto max-w-5xl px-6 py-16">
+        <span className="font-mono text-[12px] tracking-[0.3em] text-slate-500 dark:text-neutral-400">
+          WHAT&apos;S PROTECTING THIS ACCOUNT
+        </span>
+
+        <div className="relative mt-10">
+          {/* Vertical timeline line */}
+          <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-slate-200 dark:bg-neutral-800" />
+
+          <div className="space-y-12">
             {FEATURES.map((f, i) => (
               <div
                 key={f.code}
-                className="grid grid-cols-[80px_1fr] items-start gap-6 border-t border-[rgba(231,228,217,0.12)] py-6 md:grid-cols-[80px_260px_1fr]"
-                style={
-                  i === FEATURES.length - 1
-                    ? { borderBottom: "1px solid rgba(231,228,217,0.12)" }
-                    : {}
-                }
+                className={`relative flex items-center ${
+                  i % 2 === 0 ? "flex-row" : "flex-row-reverse"
+                }`}
               >
-                <span className="font-mono text-[12px] tracking-widest text-[#3E6F66]">
-                  {f.code}
-                </span>
-                <span
-                  className="text-[17px] text-[#E7E4D9]"
-                  style={{ fontFamily: "'Fraunces', serif", fontWeight: 500 }}
+                {/* Timeline dot */}
+                <div className="absolute left-1/2 z-10 -translate-x-1/2 flex h-10 w-10 items-center justify-center rounded-full border-2 border-sky-600 bg-white dark:border-sky-400 dark:bg-neutral-950">
+                  <span className="font-mono text-[10px] font-bold tracking-widest text-sky-600 dark:text-sky-400">
+                    {f.code}
+                  </span>
+                </div>
+
+                {/* Card */}
+                <div
+                  className={`w-[calc(50%-3rem)] ${
+                    i % 2 === 0 ? "pr-8 text-right" : "pl-8 text-left"
+                  }`}
                 >
-                  {f.name}
-                </span>
-                <span className="text-[14px] leading-normal text-[#8A8F86] md:text-right">
-                  {f.desc}
-                </span>
+                  <div
+                    className={`rounded-lg border border-slate-200 p-5 transition-all hover:border-sky-400 hover:shadow-lg dark:border-neutral-800 dark:hover:border-sky-500 ${
+                      i % 2 === 0
+                        ? "hover:-translate-x-1"
+                        : "hover:translate-x-1"
+                    }`}
+                  >
+                    <h3 className="font-serif text-[18px] font-medium text-slate-900 dark:text-slate-50">
+                      {f.name}
+                    </h3>
+                    <p className="mt-1 text-[14px] leading-relaxed text-slate-600 dark:text-neutral-400">
+                      {f.desc}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Empty spacer to maintain layout */}
+                <div className="w-[calc(50%-3rem)]" />
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <footer className="mx-auto max-w-5xl px-6 pb-12">
-          <p className="font-mono text-[11px] tracking-[0.15em] text-[#5C6058]">
-            SESSION-CTL-04 · No credential is ever trusted alone.
-          </p>
-        </footer>
-      </main>
-    </>
+      <footer className="mx-auto max-w-5xl px-6 pb-12">
+        <p className="font-mono text-[11px] tracking-[0.15em] text-slate-400 dark:text-neutral-600">
+          SESSION-CTL-04 · No credential is ever trusted alone.
+        </p>
+      </footer>
+    </main>
   );
 }

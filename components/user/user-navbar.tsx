@@ -19,11 +19,7 @@ const NAV_ITEMS = [
   { href: "/user/activity", label: "Activity" },
 ];
 
-export default function UserNavbar({
-  name,
-  email,
-  image,
-}: UserNavbarProps) {
+export default function UserNavbar({ name, email, image }: UserNavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,7 +34,7 @@ export default function UserNavbar({
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-300 bg-white/90 backdrop-blur dark:border-neutral-700 dark:bg-neutral-900/90">
+    <header className="sticky top-0 z-20 border-b  border-slate-300 bg-white/90 backdrop-blur dark:border-neutral-700 dark:bg-neutral-900/90">
       <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/user" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-sm font-bold text-white">
@@ -73,11 +69,7 @@ export default function UserNavbar({
           <div className="hidden items-center gap-2.5 sm:flex">
             {image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={image}
-                alt=""
-                className="h-9 w-9 rounded-full"
-              />
+              <img src={image} alt="" className="h-9 w-9 rounded-full" />
             ) : (
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
                 {(name ?? email ?? "?").charAt(0).toUpperCase()}
