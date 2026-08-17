@@ -105,8 +105,13 @@ export const auth = betterAuth({
   ],
   rateLimit: {
     window: 60,
-    max: 5,
+    max: 30,
     storage: "database",
+  },
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
+    },
   },
   hooks: {
     before: createAuthMiddleware(

@@ -115,11 +115,11 @@ export default function UsersTable() {
     setLastViewUser(user);
   };
 
-  const updateUserInList = (updated: AdminUser) => {
+  const updateUserInList = useCallback((updated: AdminUser) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === updated.id ? updated : u)),
     );
-  };
+  }, []);
 
   const handleUnban = async (user: AdminUser) => {
     await runAction(`unban:${user.id}`, async () => {
