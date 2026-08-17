@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { ChatGroq } from "@langchain/groq";
 import { prisma } from "./prisma";
+import { getSettings, incrementAiRequestCount } from "./settings";
 
 export type RiskLevel = "low" | "medium" | "high";
 
@@ -77,7 +78,11 @@ async function collectSignals(ctx: AttemptContext): Promise<Signals> {
   return { history, recentCount, stuffing };
 }
 
-function heuristicScore(ctx: AttemptContext, signals: Signals): RiskResult {
+function heuristicScore(
+  ctx: AttemptContext,
+  signals: Signals,
+  maxFailedAttempts: number,
+): RiskResult {
   const { history, recentCount, stuffing } = signals;
   const reasons: string[] = [];
   let score = 0;
@@ -133,9 +138,11 @@ function heuristicScore(ctx: AttemptContext, signals: Signals): RiskResult {
     }
   }
 
-  if (recentCount >= 5) {
+  if (recentCount >= maxFailedAttempts) {
     score += 0.2;
-    reasons.push(`High attempt velocity: ${recentCount} attempts in the last 24h`);
+    reasons.push(
+      `High attempt velocity: ${recentCount} attempts in the last 24h (limit ${maxFailedAttempts})`,
+    );
   }
 
   if (ctx.ipAddress && stuffing.length >= 4) {
@@ -215,6 +222,8 @@ async function assessWithGroq(
       clearTimeout(timer);
     }
 
+    await incrementAiRequestCount();
+
     const score = clamp01(Number(result.score) || 0);
     const level: RiskLevel =
       score >= 0.7 ? "high" : score >= 0.4 ? "medium" : "low";
@@ -233,11 +242,18 @@ async function assessWithGroq(
 
 export async function evaluateRisk(ctx: AttemptContext): Promise<RiskResult> {
   const signals = await collectSignals(ctx);
-  const heuristic = heuristicScore(ctx, signals);
+  const settings = await getSettings();
+  const heuristic = heuristicScore(
+    ctx,
+    signals,
+    settings.maxFailedAttempts,
+  );
 
   if (heuristic.level === "high") return heuristic;
 
-  const llm = await assessWithGroq(ctx, signals, heuristic);
+  const llm = settings.aiRiskEnabled
+    ? await assessWithGroq(ctx, signals, heuristic)
+    : null;
   if (!llm) return heuristic;
 
   const score = clamp01(Math.max(heuristic.score, llm.score));

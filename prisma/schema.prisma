@@ -106,6 +106,14 @@ model RateLimit {
   @@map("rateLimit")
 }
 
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("setting")
+}
+
 model LoginAttempt {
   id         String    @id
   userId     String?

@@ -12,6 +12,7 @@ import {
 } from "better-auth/plugins";
 import { sendEmail } from "./brevo";
 import { evaluateRisk, logLoginAttempt } from "./risk";
+import { getSettings } from "./settings";
 
 function extractRequestInfo(ctx: {
   request?: Request;
@@ -109,6 +110,24 @@ export const auth = betterAuth({
           where: { email },
           select: { id: true },
         });
+
+        const { maxFailedAttempts } = await getSettings();
+        const failedWindow = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const failedCount = await prisma.loginAttempt.count({
+          where: { email, success: false, createdAt: { gte: failedWindow } },
+        });
+
+        if (failedCount >= maxFailedAttempts) {
+          await logLoginAttempt({
+            email,
+            userId: user?.id,
+            ...info,
+            success: false,
+          });
+          throw new APIError("TOO_MANY_REQUESTS", {
+            message: `Account locked: too many failed attempts (${maxFailedAttempts}). Try again later.`,
+          });
+        }
 
         const risk = await evaluateRisk({
           email,
