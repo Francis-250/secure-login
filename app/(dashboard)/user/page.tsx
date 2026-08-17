@@ -1,5 +1,5 @@
-import UserDashboard from "@/components/user/user-dashboard";
+import Overview from "@/components/user/overview";
 
-export default function UserPage() {
-  return <UserDashboard />;
+export default function UserOverviewPage() {
+  return <Overview />;
 }

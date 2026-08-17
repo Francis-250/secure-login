@@ -9,6 +9,7 @@ import {
   lastLoginMethod,
   phoneNumber,
   twoFactor,
+  username,
 } from "better-auth/plugins";
 import { sendEmail } from "./brevo";
 import { evaluateRisk, logLoginAttempt } from "./risk";
@@ -52,6 +53,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    username(),
     phoneNumber(),
     admin(),
     lastLoginMethod(),
@@ -60,6 +62,9 @@ export const auth = betterAuth({
       expiresIn: 20 * 60,
       sendVerificationOnSignUp: true,
       allowedAttempts: 3,
+      changeEmail: {
+        enabled: true,
+      },
 
       async sendVerificationOTP({ email, otp, type }) {
         if (type === "sign-in") {
@@ -79,6 +84,12 @@ export const auth = betterAuth({
             to: email,
             subject: "Reset your password — SECURE LOGIN",
             html: `<p>Your password reset code is: <strong>${otp}</strong></p>`,
+          });
+        } else if (type === "change-email") {
+          await sendEmail({
+            to: email,
+            subject: "Confirm your new email — SECURE LOGIN",
+            html: `<p>Your email change code is: <strong>${otp}</strong></p>`,
           });
         }
       },
