@@ -25,7 +25,12 @@ export default function LoginForm({
       { email, password },
       {
         onError: (ctx) => {
-          toast.error(ctx.error.message);
+          const message = ctx.error.message ?? "";
+          if (message.startsWith("STEP_UP_REQUIRED")) {
+            router.push(`/auth/step-up?email=${encodeURIComponent(email)}`);
+            return;
+          }
+          toast.error(message);
         },
         onSuccess: (ctx) => {
           if ("twoFactorRedirect" in ctx.data && ctx.data.twoFactorRedirect) {

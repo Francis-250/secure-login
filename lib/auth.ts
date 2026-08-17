@@ -151,7 +151,7 @@ export const auth = betterAuth({
           ...info,
         });
 
-        if (risk.level === "high") {
+        if (risk.action === "block") {
           await logLoginAttempt({
             email,
             userId: user?.id,
@@ -178,7 +178,7 @@ export const auth = betterAuth({
           const info = extractRequestInfo(ctx);
           const user = await prisma.user.findUnique({
             where: { email },
-            select: { id: true },
+            select: { id: true, twoFactorEnabled: true },
           });
 
           const risk = await evaluateRisk({
@@ -186,6 +186,32 @@ export const auth = betterAuth({
             userId: user?.id,
             ...info,
           });
+
+          if (!failed && risk.action === "challenge" && !user?.twoFactorEnabled) {
+            const token = (returned as { token?: string } | undefined)?.token;
+            if (token) {
+              await prisma.session
+                .delete({ where: { token } })
+                .catch(() => {});
+            }
+
+            await logLoginAttempt({
+              email,
+              userId: user?.id,
+              ...info,
+              success: false,
+              riskScore: risk.score,
+              riskReason: `Step-up verification required: ${risk.reasons.join("; ")}`,
+            });
+
+            await auth.api.sendVerificationOTP({
+              body: { email, type: "sign-in" },
+            });
+
+            throw new APIError("FORBIDDEN", {
+              message: `STEP_UP_REQUIRED: ${risk.reasons.join("; ")}`,
+            });
+          }
 
           await logLoginAttempt({
             email,

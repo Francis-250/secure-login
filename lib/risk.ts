@@ -6,10 +6,27 @@ import { getSettings, incrementAiRequestCount } from "./settings";
 
 export type RiskLevel = "low" | "medium" | "high";
 
+export type RiskAction = "allow" | "challenge" | "block";
+
 export interface RiskResult {
   score: number;
   level: RiskLevel;
   reasons: string[];
+  /**
+   * What to do with the attempt:
+   * - "block": unambiguous attack indicators -> reject the sign-in.
+   * - "challenge": ambiguous signals (new device/location) -> require email OTP.
+   * - "allow": nothing suspicious -> let the sign-in proceed.
+   */
+  action: RiskAction;
+}
+
+interface HeuristicResult {
+  score: number;
+  level: RiskLevel;
+  reasons: string[];
+  attackScore: number;
+  identity: { newDevice: boolean; newLocation: boolean };
 }
 
 export interface AttemptContext {
@@ -62,13 +79,21 @@ async function collectSignals(ctx: AttemptContext): Promise<Signals> {
     : [];
 
   const recentCount = await prisma.loginAttempt.count({
-    where: { email: ctx.email, createdAt: { gte: since } },
+    where: {
+      email: ctx.email,
+      success: false,
+      createdAt: { gte: since },
+    },
   });
 
   let stuffing: string[] = [];
   if (ctx.ipAddress) {
     const rows = await prisma.loginAttempt.findMany({
-      where: { ipAddress: ctx.ipAddress, createdAt: { gte: since } },
+      where: {
+        ipAddress: ctx.ipAddress,
+        success: false,
+        createdAt: { gte: since },
+      },
       select: { email: true },
       distinct: ["email"],
     });
@@ -82,16 +107,19 @@ function heuristicScore(
   ctx: AttemptContext,
   signals: Signals,
   maxFailedAttempts: number,
-): RiskResult {
+): HeuristicResult {
   const { history, recentCount, stuffing } = signals;
   const reasons: string[] = [];
+  const identity = { newDevice: false, newLocation: false };
   let score = 0;
+  let attackScore = 0;
 
   const hasBaseline = history.length > 0;
 
   if (hasBaseline && ctx.userAgent) {
     const seen = history.some((a) => a.userAgent === ctx.userAgent);
     if (!seen) {
+      identity.newDevice = true;
       score += 0.35;
       reasons.push("New device: this browser/agent has never signed in before");
     }
@@ -102,6 +130,7 @@ function heuristicScore(
       history.map((a) => a.country).filter(Boolean) as string[],
     );
     if (knownCountries.size > 0 && !knownCountries.has(ctx.country)) {
+      identity.newLocation = true;
       score += 0.3;
       reasons.push(`New location: first sign-in from ${ctx.country}`);
     }
@@ -116,6 +145,7 @@ function heuristicScore(
     const lastMs = history[0].createdAt.getTime();
     const diffHours = (Date.now() - lastMs) / 3600000;
     if (diffHours < 6) {
+      attackScore += 0.5;
       score += 0.5;
       reasons.push(
         `Impossible travel: signed in from ${history[0].country} and ${ctx.country} within ${diffHours.toFixed(1)} hours`,
@@ -139,16 +169,18 @@ function heuristicScore(
   }
 
   if (recentCount >= maxFailedAttempts) {
+    attackScore += 0.2;
     score += 0.2;
     reasons.push(
-      `High attempt velocity: ${recentCount} attempts in the last 24h (limit ${maxFailedAttempts})`,
+      `High attempt velocity: ${recentCount} failed attempts in the last 24h (limit ${maxFailedAttempts})`,
     );
   }
 
   if (ctx.ipAddress && stuffing.length >= 4) {
+    attackScore += 0.4;
     score += 0.4;
     reasons.push(
-      `Credential stuffing pattern: ${stuffing.length} distinct emails from this IP in 24h`,
+      `Credential stuffing pattern: ${stuffing.length} distinct emails with failed attempts from this IP in 24h`,
     );
   }
 
@@ -156,14 +188,27 @@ function heuristicScore(
   const level: RiskLevel =
     score >= 0.7 ? "high" : score >= 0.4 ? "medium" : "low";
 
-  return { score, level, reasons };
+  return { score, level, reasons, attackScore, identity };
+}
+
+function decideAction(
+  level: RiskLevel,
+  attackScore: number,
+  identity: HeuristicResult["identity"],
+): RiskAction {
+  if (attackScore >= 0.4) return "block";
+  if (level === "high") return "challenge";
+  if ((identity.newDevice || identity.newLocation) && level === "medium") {
+    return "challenge";
+  }
+  return "allow";
 }
 
 async function assessWithGroq(
   ctx: AttemptContext,
   signals: Signals,
-  heuristic: RiskResult,
-): Promise<RiskResult | null> {
+  heuristic: HeuristicResult,
+): Promise<{ score: number; level: RiskLevel; reasons: string[] } | null> {
   if (!process.env.GROQ_API_KEY) return null;
 
   const { history, recentCount, stuffing } = signals;
@@ -245,19 +290,46 @@ export async function evaluateRisk(ctx: AttemptContext): Promise<RiskResult> {
   const settings = await getSettings();
   const heuristic = heuristicScore(ctx, signals, settings.maxFailedAttempts);
 
-  if (heuristic.level === "high") return heuristic;
+  if (heuristic.level === "high") {
+    return {
+      score: heuristic.score,
+      level: heuristic.level,
+      reasons: heuristic.reasons,
+      action: decideAction(
+        heuristic.level,
+        heuristic.attackScore,
+        heuristic.identity,
+      ),
+    };
+  }
 
   const llm = settings.aiRiskEnabled
     ? await assessWithGroq(ctx, signals, heuristic)
     : null;
-  if (!llm) return heuristic;
+  if (!llm) {
+    return {
+      score: heuristic.score,
+      level: heuristic.level,
+      reasons: heuristic.reasons,
+      action: decideAction(
+        heuristic.level,
+        heuristic.attackScore,
+        heuristic.identity,
+      ),
+    };
+  }
 
   const score = clamp01(Math.max(heuristic.score, llm.score));
   const level: RiskLevel =
     score >= 0.7 ? "high" : score >= 0.4 ? "medium" : "low";
   const reasons = [...new Set([...heuristic.reasons, ...llm.reasons])];
 
-  return { score, level, reasons };
+  return {
+    score,
+    level,
+    reasons,
+    action: decideAction(level, heuristic.attackScore, heuristic.identity),
+  };
 }
 
 export interface LogAttemptInput extends AttemptContext {
