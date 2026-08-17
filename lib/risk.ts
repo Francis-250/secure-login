@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { ChatGroq } from "@langchain/groq";
 import { prisma } from "./prisma";
 
@@ -160,9 +161,15 @@ async function assessWithGroq(
 
   const { history, recentCount, stuffing } = signals;
 
-  const summary = [
-    `Assess the risk of the following email sign-in attempt.`,
-    ``,
+  const systemPrompt = [
+    "You are a security analyst assessing the risk of an email sign-in attempt.",
+    "Score the attempt 0 to 1, where 0 is completely safe and 1 is almost certainly malicious.",
+    "Classify as: high (>= 0.7), medium (>= 0.4), low (< 0.4).",
+    "Explain each concern as a short reason string (max 8).",
+    "If nothing is suspicious, return an empty reasons array and score 0.",
+  ].join("\n");
+
+  const attemptSummary = [
     `Email: ${ctx.email}`,
     `Registered user: ${ctx.userId ? "yes" : "no"}`,
     `IP address: ${ctx.ipAddress ?? "unknown"}`,
@@ -176,6 +183,13 @@ async function assessWithGroq(
       ? `Heuristic flags: ${heuristic.reasons.join("; ")}`
       : "Heuristic flags: none",
   ].join("\n");
+
+  const messages = [
+    new SystemMessage(systemPrompt),
+    new HumanMessage(
+      `Assess the risk of this sign-in attempt and return the JSON result.\n\n${attemptSummary}`,
+    ),
+  ];
 
   try {
     const llm = new ChatGroq({
@@ -194,7 +208,7 @@ async function assessWithGroq(
       reasons: string[];
     };
     try {
-      result = (await structured.invoke(summary, {
+      result = (await structured.invoke(messages, {
         signal: controller.signal,
       })) as { score: number; level: RiskLevel; reasons: string[] };
     } finally {

@@ -17,9 +17,9 @@ import {
 import {
   actionBtnClass,
   BanForm,
-  Modal,
   PasswordForm,
 } from "@/components/admin/users-table";
+import Drawer from "@/components/admin/drawer";
 
 type AdminUser = {
   id: string;
@@ -433,133 +433,135 @@ export default function UserDetail({ userId }: { userId: string }) {
         </dl>
       </div>
 
-      {sessionsOpen && (
-        <Modal
-          title={`Sessions for ${user.email}`}
-          onClose={() => setSessionsOpen(false)}
-        >
-          <div className="space-y-3">
-            {sessionsLoading ? (
-              <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                Loading sessions…
-              </p>
-            ) : sessions.length === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-                No active sessions.
-              </p>
-            ) : (
-              sessions.map((s) => (
-                <div
-                  key={s.id}
-                  className="rounded-md border border-slate-200 p-3 dark:border-neutral-700"
-                >
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
-                    {s.userAgent || "Unknown device"}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    {s.ipAddress ? `IP ${s.ipAddress} · ` : ""}
-                    Expires {new Date(s.expiresAt).toLocaleString()}
-                  </p>
-                  <div className="mt-2 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleRevokeSession(s.token)}
-                      disabled={busy === `revoke:${s.token}`}
-                      className={actionBtnClass}
-                    >
-                      {busy === `revoke:${s.token}` ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <MonitorSmartphone className="size-3.5" />
-                      )}
-                      Revoke
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-            <div className="flex justify-end border-t border-slate-200 pt-3 dark:border-neutral-700">
-              <button
-                type="button"
-                onClick={() => {
-                  loadSessions(user.id);
-                }}
-                className="mr-auto text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
-              >
-                Refresh
-              </button>
-              <button
-                type="button"
-                onClick={handleRevokeAll}
-                disabled={busy === `revokeAll:${user.id}` || sessionsLoading}
-                className="inline-flex items-center gap-1.5 rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/40"
-              >
-                {busy === `revokeAll:${user.id}` ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <MonitorSmartphone className="size-3.5" />
-                )}
-                Revoke all
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {banOpen && (
-        <Modal title={`Ban ${user.email}`} onClose={() => setBanOpen(false)}>
-          <BanForm
-            busy={busy === `ban:${user.id}`}
-            onSubmit={(reason, expiresIn) => handleBan(reason, expiresIn)}
-          />
-        </Modal>
-      )}
-
-      {passwordOpen && (
-        <Modal
-          title={`Set password for ${user.email}`}
-          onClose={() => setPasswordOpen(false)}
-        >
-          <PasswordForm
-            busy={busy === `password:${user.id}`}
-            onSubmit={handleSetPassword}
-          />
-        </Modal>
-      )}
-
-      {deleteOpen && (
-        <Modal title="Delete user" onClose={() => setDeleteOpen(false)}>
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              Permanently delete <span className="font-semibold">{user.email}</span>?
-              This removes the account, sessions, and all related data. This
-              cannot be undone.
+      <Drawer
+        open={sessionsOpen}
+        onClose={() => setSessionsOpen(false)}
+        title={`Sessions for ${user.email}`}
+      >
+        <div className="space-y-3">
+          {sessionsLoading ? (
+            <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+              Loading sessions…
             </p>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteOpen(false)}
-                className={actionBtnClass}
+          ) : sessions.length === 0 ? (
+            <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+              No active sessions.
+            </p>
+          ) : (
+            sessions.map((s) => (
+              <div
+                key={s.id}
+                className="rounded-md border border-slate-200 p-3 dark:border-neutral-700"
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={busy === `delete:${user.id}`}
-                className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
-              >
-                {busy === `delete:${user.id}` ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="size-3.5" />
-                )}
-                Delete user
-              </button>
-            </div>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-50">
+                  {s.userAgent || "Unknown device"}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  {s.ipAddress ? `IP ${s.ipAddress} · ` : ""}
+                  Expires {new Date(s.expiresAt).toLocaleString()}
+                </p>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => handleRevokeSession(s.token)}
+                    disabled={busy === `revoke:${s.token}`}
+                    className={actionBtnClass}
+                  >
+                    {busy === `revoke:${s.token}` ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <MonitorSmartphone className="size-3.5" />
+                    )}
+                    Revoke
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+          <div className="flex justify-end border-t border-slate-200 pt-3 dark:border-neutral-700">
+            <button
+              type="button"
+              onClick={() => {
+                loadSessions(user.id);
+              }}
+              className="mr-auto text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-50"
+            >
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={handleRevokeAll}
+              disabled={busy === `revokeAll:${user.id}` || sessionsLoading}
+              className="inline-flex items-center gap-1.5 rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/40"
+            >
+              {busy === `revokeAll:${user.id}` ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <MonitorSmartphone className="size-3.5" />
+              )}
+              Revoke all
+            </button>
           </div>
-        </Modal>
-      )}
+        </div>
+      </Drawer>
+
+      <Drawer
+        open={banOpen}
+        onClose={() => setBanOpen(false)}
+        title={`Ban ${user.email}`}
+      >
+        <BanForm
+          busy={busy === `ban:${user.id}`}
+          onSubmit={(reason, expiresIn) => handleBan(reason, expiresIn)}
+        />
+      </Drawer>
+
+      <Drawer
+        open={passwordOpen}
+        onClose={() => setPasswordOpen(false)}
+        title={`Set password for ${user.email}`}
+      >
+        <PasswordForm
+          busy={busy === `password:${user.id}`}
+          onSubmit={handleSetPassword}
+        />
+      </Drawer>
+
+      <Drawer
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete user"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Permanently delete <span className="font-semibold">{user.email}</span>?
+            This removes the account, sessions, and all related data. This
+            cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              className={actionBtnClass}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={busy === `delete:${user.id}`}
+              className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+            >
+              {busy === `delete:${user.id}` ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="size-3.5" />
+              )}
+              Delete user
+            </button>
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 }

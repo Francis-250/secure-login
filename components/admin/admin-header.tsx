@@ -5,15 +5,29 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ExternalLink, LogOut, ShieldCheck } from "lucide-react";
+import {
+  ExternalLink,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ShieldCheck,
+} from "lucide-react";
 
 interface AdminHeaderProps {
   name: string | null;
   email: string;
   image?: string | null;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export default function AdminHeader({ name, email, image }: AdminHeaderProps) {
+export default function AdminHeader({
+  name,
+  email,
+  image,
+  collapsed,
+  onToggleCollapse,
+}: AdminHeaderProps) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const { data: session } = authClient.useSession();
@@ -59,6 +73,20 @@ export default function AdminHeader({ name, email, image }: AdminHeaderProps) {
       )}
 
       <div className="flex h-16 items-center gap-4 px-6">
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-neutral-800 dark:hover:text-slate-50"
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="size-5" />
+          ) : (
+            <PanelLeftClose className="size-5" />
+          )}
+        </button>
+
         <div className="flex min-w-0 items-center gap-3">
           {image ? (
             // eslint-disable-next-line @next/next/no-img-element

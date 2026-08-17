@@ -13,7 +13,6 @@ import {
   Trash2,
   UserPlus,
   UserRoundCog,
-  X,
 } from "lucide-react";
 import ActionDropdown from "@/components/admin/dropdown-menu";
 import Drawer from "@/components/admin/drawer";
@@ -27,41 +26,6 @@ type CreateUserData = {
   password: string;
   role: string;
 };
-
-export function Modal({
-  title,
-  onClose,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="w-full max-w-md rounded-lg border border-slate-300 bg-white p-6 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-            {title}
-          </h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close dialog"
-            className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-neutral-800 dark:hover:text-slate-50"
-          >
-            <X className="size-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 export const inputClass =
   "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-slate-50";
@@ -86,6 +50,9 @@ export default function UsersTable() {
   const [bannedFilter, setBannedFilter] = useState("");
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [banOpen, setBanOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [banTarget, setBanTarget] = useState<AdminUser | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<AdminUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
@@ -180,7 +147,7 @@ export default function UsersTable() {
         return;
       }
       toast.success(`Banned ${user.email}`);
-      setBanTarget(null);
+      setBanOpen(false);
       fetchUsers();
     });
   };
@@ -193,7 +160,7 @@ export default function UsersTable() {
         return;
       }
       toast.success(`Deleted ${user.email}`);
-      setDeleteTarget(null);
+      setDeleteOpen(false);
       if (viewUser?.id === user.id) setViewUser(null);
       fetchUsers();
     });
@@ -210,7 +177,7 @@ export default function UsersTable() {
         return;
       }
       toast.success(`Password updated for ${user.email}`);
-      setPasswordTarget(null);
+      setPasswordOpen(false);
     });
   };
 
@@ -451,14 +418,20 @@ export default function UsersTable() {
                             : {
                                 label: "Ban",
                                 icon: <Ban className="size-4" />,
-                                onClick: () => setBanTarget(user),
+                                onClick: () => {
+                                  setBanTarget(user);
+                                  setBanOpen(true);
+                                },
                                 disabled: rowBusy,
                                 danger: true,
                               },
                           {
                             label: "Set password",
                             icon: <KeyRound className="size-4" />,
-                            onClick: () => setPasswordTarget(user),
+                            onClick: () => {
+                              setPasswordTarget(user);
+                              setPasswordOpen(true);
+                            },
                             disabled: rowBusy,
                           },
                           {
@@ -470,7 +443,10 @@ export default function UsersTable() {
                           {
                             label: "Delete",
                             icon: <Trash2 className="size-4" />,
-                            onClick: () => setDeleteTarget(user),
+                            onClick: () => {
+                              setDeleteTarget(user);
+                              setDeleteOpen(true);
+                            },
                             disabled: rowBusy,
                             danger: true,
                           },
@@ -505,41 +481,55 @@ export default function UsersTable() {
         </table>
       </div>
 
-      {createOpen && (
-        <Modal title="Create user" onClose={() => setCreateOpen(false)}>
-          <CreateUserForm
-            busy={busy === "create-user"}
-            onSubmit={handleCreateUser}
-          />
-        </Modal>
-      )}
+      <Drawer
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Create user"
+      >
+        <CreateUserForm
+          busy={busy === "create-user"}
+          onSubmit={handleCreateUser}
+        />
+      </Drawer>
 
-      {banTarget && (
-        <Modal title={`Ban ${banTarget.email}`} onClose={() => setBanTarget(null)}>
+      <Drawer
+        open={banOpen}
+        onClose={() => setBanOpen(false)}
+        title={banTarget ? `Ban ${banTarget.email}` : "Ban user"}
+      >
+        {banTarget && (
           <BanForm
             busy={busy === `ban:${banTarget.id}`}
-            onSubmit={(reason, expiresIn) => handleBan(banTarget, reason, expiresIn)}
+            onSubmit={(reason, expiresIn) =>
+              handleBan(banTarget, reason, expiresIn)
+            }
           />
-        </Modal>
-      )}
+        )}
+      </Drawer>
 
-      {passwordTarget && (
-        <Modal
-          title={`Set password for ${passwordTarget.email}`}
-          onClose={() => setPasswordTarget(null)}
-        >
+      <Drawer
+        open={passwordOpen}
+        onClose={() => setPasswordOpen(false)}
+        title={
+          passwordTarget
+            ? `Set password for ${passwordTarget.email}`
+            : "Set password"
+        }
+      >
+        {passwordTarget && (
           <PasswordForm
             busy={busy === `password:${passwordTarget.id}`}
             onSubmit={(pw) => handleSetPassword(passwordTarget, pw)}
           />
-        </Modal>
-      )}
+        )}
+      </Drawer>
 
-      {deleteTarget && (
-        <Modal
-          title="Delete user"
-          onClose={() => setDeleteTarget(null)}
-        >
+      <Drawer
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete user"
+      >
+        {deleteTarget && (
           <div className="space-y-4">
             <p className="text-sm text-slate-600 dark:text-slate-300">
               Permanently delete{" "}
@@ -550,7 +540,7 @@ export default function UsersTable() {
             <div className="flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setDeleteTarget(null)}
+                onClick={() => setDeleteOpen(false)}
                 className={actionBtnClass}
               >
                 Cancel
@@ -570,8 +560,8 @@ export default function UsersTable() {
               </button>
             </div>
           </div>
-        </Modal>
-      )}
+        )}
+      </Drawer>
 
       <Drawer
         open={viewUser !== null}
