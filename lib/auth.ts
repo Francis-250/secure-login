@@ -7,7 +7,6 @@ import {
   lastLoginMethod,
   phoneNumber,
   twoFactor,
-  username,
 } from "better-auth/plugins";
 import { sendEmail } from "./brevo";
 
@@ -17,7 +16,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    minPasswordLength: 3,
+    minPasswordLength: 8,
     maxPasswordLength: 100,
     requireEmailVerification: true,
 
@@ -41,7 +40,6 @@ export const auth = betterAuth({
   },
   plugins: [
     phoneNumber(),
-    username(),
     admin(),
     lastLoginMethod(),
     emailOTP({

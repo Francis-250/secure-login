@@ -10,19 +10,26 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const navigate = useRouter();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const { error } = await authClient.signIn.email({
-      email,
-      password,
-    });
-    if (error) {
-      toast.error(error.message);
-    }
-    navigate.push("/auth/callbacks");
+    await authClient.signIn.email(
+      { email, password },
+      {
+        onError: (ctx) => {
+          toast.error(ctx.error.message);
+        },
+        onSuccess: (ctx) => {
+          if ("twoFactorRedirect" in ctx.data && ctx.data.twoFactorRedirect) {
+            router.push("/auth/two-factor");
+            return;
+          }
+          router.push("/auth/callbacks");
+        },
+      },
+    );
   };
 
   const handleGitHubSignIn = async () => {

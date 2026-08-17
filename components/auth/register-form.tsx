@@ -1,7 +1,10 @@
 "use client";
 
+import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function RegisterForm() {
   const [name, setName] = useState("");
@@ -10,13 +13,44 @@ export default function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [terms, setTerms] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const { error } = await authClient.signUp.email({
+      email,
+      password,
+      name,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
   };
 
-  const handleGitHubSignIn = () => {};
+  const handleGitHubSignIn = async () => {
+    const { error } = await authClient.signIn.social({
+      provider: "github",
+      callbackURL: "/auth/callbacks",
+    });
 
-  const handleGoogleSignIn = () => {};
+    if (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const { error } = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/auth/callbacks",
+    });
+
+    if (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <div className="border border-slate-300 rounded-lg p-6 shadow-sm md:p-8 dark:border-neutral-700">

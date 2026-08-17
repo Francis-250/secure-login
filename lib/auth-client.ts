@@ -5,7 +5,6 @@ import {
   lastLoginMethodClient,
   phoneNumberClient,
   twoFactorClient,
-  usernameClient,
 } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
@@ -14,7 +13,6 @@ export const authClient = createAuthClient({
     emailOTPClient(),
     lastLoginMethodClient(),
     phoneNumberClient(),
-    usernameClient(),
-    twoFactorClient(),
+    twoFactorClient({ twoFactorPage: "/auth/two-factor" }),
   ],
 });
