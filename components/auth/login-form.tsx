@@ -163,6 +163,15 @@ export default function LoginForm({
         </button>
       </form>
 
+      <div className="mt-4">
+        <Link
+          href="/auth/magic-link"
+          className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-slate-200 dark:hover:bg-neutral-700"
+        >
+          Sign in with an email link
+        </Link>
+      </div>
+
       {githubEnabled && googleEnabled && (
         <>
           <div className="relative my-6">

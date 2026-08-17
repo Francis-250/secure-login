@@ -3,8 +3,8 @@
 A production-style authentication and account-management platform built with
 **Next.js (App Router)**, **Better Auth**, **Prisma (PostgreSQL)**, and an
 **AI-assisted risk engine** (Groq / LangChain). It provides email/password,
-social (GitHub/Google), email OTP, and TOTP 2FA sign-in, plus a full admin
-console for managing users, sessions, and login risk.
+social (GitHub/Google), email OTP, **magic link**, and TOTP 2FA sign-in, plus a
+full admin console for managing users, sessions, and login risk.
 
 > The risk engine decides **allow**, **challenge**, or **block** for every
 > password sign-in. Legitimate users who change devices/browsers are stepped up
@@ -23,6 +23,7 @@ console for managing users, sessions, and login risk.
   - [Sign-up & email verification](#sign-up--email-verification)
   - [Password sign-in](#password-sign-in)
   - [The step-up (OTP) flow](#the-step-up-otp-flow)
+  - [Magic link sign-in](#magic-link-sign-in)
   - [Two-factor authentication (TOTP)](#two-factor-authentication-totp)
   - [Social sign-in](#social-sign-in)
   - [Email OTP sign-in](#email-otp-sign-in)
@@ -199,6 +200,22 @@ location** with an otherwise-correct password):
 The code is 6 digits, valid for 20 minutes, with 3 allowed attempts; the
 step-up page offers a *Resend code* button. Users with **TOTP 2FA enabled skip
 the email step-up** — their 2FA already provides the second factor.
+
+### Magic link sign-in
+
+From `/auth/magic-link` (or the *Sign in with an email link* button on the
+login page), a user enters their email and the `magicLink` plugin emails a
+one-time, 10-minute sign-in URL (`POST /sign-in/magic-link` via
+`authClient.signIn.magicLink`). Opening the link hits `GET /magic-link/verify`,
+which atomically consumes the token, creates a session, and redirects to the
+`callbackURL` (`/auth/callbacks`), where the user is routed to their dashboard.
+
+- New users are auto-registered (email verified by inbox possession) — this
+  mirrors the email-OTP sign-in behavior; set `disableSignUp: true` in
+  `lib/auth.ts` to require existing accounts only.
+- The link is single-use and rate-limited (3 requests/min).
+- The last-login-method indicator is set to `magic-link` (shown on the user
+  Security page).
 
 ### Two-factor authentication (TOTP)
 

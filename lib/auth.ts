@@ -7,6 +7,7 @@ import {
   admin,
   emailOTP,
   lastLoginMethod,
+  magicLink,
   phoneNumber,
   twoFactor,
   username,
@@ -100,6 +101,19 @@ export const auth = betterAuth({
         enabled: true,
         maxFailedAttempts: 5,
         durationSeconds: 900,
+      },
+    }),
+    magicLink({
+      expiresIn: 10 * 60,
+      rateLimit: { window: 60, max: 3 },
+      async sendMagicLink({ email, url }) {
+        await sendEmail({
+          to: email,
+          subject: "Your sign-in link — SECURE LOGIN",
+          html: `<p>Sign in to your account by opening this link:</p>
+<p><a href="${url}" style="color:#2563eb;font-weight:600">${url}</a></p>
+<p>This link expires in 10 minutes and works once. If you didn't request it, you can safely ignore this email.</p>`,
+        });
       },
     }),
   ],

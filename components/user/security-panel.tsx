@@ -119,6 +119,7 @@ function BackupCodes({
 const LAST_METHOD_LABELS: Record<string, string> = {
   email: "email and password",
   "email-otp": "an email sign-in code",
+  "magic-link": "an email sign-in link",
   github: "GitHub",
   google: "Google",
   credential: "email and password",
