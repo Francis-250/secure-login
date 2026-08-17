@@ -90,7 +90,7 @@ export default function LoginForm({
             type="email"
             id="email"
             name="email"
-            placeholder="john@readymadeui.com"
+            placeholder="youremail@gmail.com"
             required
             className="px-3 py-2.5 text-sm text-slate-900 rounded-md bg-white w-full outline-1 -outline-offset-1 outline-slate-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 dark:text-slate-50 dark:bg-neutral-800 dark:outline-neutral-700"
             value={email}
