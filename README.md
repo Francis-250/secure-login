@@ -340,7 +340,7 @@ Protected by `app/(dashboard)/admin/layout.tsx` — requires a session **and**
 | Page | Route | What it does |
 | ---- | ----- | ------------ |
 | **Dashboard** | `/admin` | Total users, active sessions, banned users, high-risk attempts; 14-day risk chart (low/med/high per day, average); recent login attempts. |
-| **Users** | `/admin/users` | Search/filter users; create users (email + temp password + role); ban/unban (reason + duration); mark email verified/unverified; set password; **impersonate**; delete. Per-user detail drawer. |
+| **Users** | `/admin/users` | Search/filter users; create users (email + temp password + role); ban/unban (reason + duration); mark email verified/unverified; set password; **unlock an account locked by failed attempts**; **impersonate**; delete. Per-user detail drawer. |
 | **Sessions** | `/admin/sessions` | All active sessions across users, searchable by user/device/IP; view details; revoke one or all for a user. |
 | **Risk log** | `/admin/risk` | Searchable/filterable login-attempt audit trail (by user, min risk score); shows IP, location, user-agent, success, score, and reason. |
 | **Settings** | `/admin/settings` | `maxFailedAttempts` (login policy / lockout + velocity threshold) and toggle the AI risk assessment; AI request counter and model display. |
@@ -358,6 +358,7 @@ routes (`/api/risk`, `/api/admin/settings`) which call
 | ----- | ------ | ---- | ------- |
 | `/api/auth/*` | all | public/plugin | Better Auth endpoints (sign-in, sign-up, OTP, 2FA, sessions, admin, social) |
 | `/api/risk` | GET | admin | Risk log query (search, userId, minRisk) |
+| `/api/admin/unlock` | POST | admin | Clear a user's recent failed attempts (unlock an account blocked by the failed-attempt lockout) |
 | `/api/admin/settings` | GET/PATCH | admin | Read/update `maxFailedAttempts` and `aiRiskEnabled` |
 | `/api/user/delete-account` | POST | user | Self-service account deletion (password or 2FA re-confirmation) |
 
@@ -370,7 +371,9 @@ routes (`/api/risk`, `/api/admin/settings`) which call
   - *Step-up verification required: New device…* — normal; they just need the
     emailed code (or to resend it).
   - *Account locked: too many failed attempts* — a temporary 24h block; wait,
-    or consider raising `maxFailedAttempts`.
+    consider raising `maxFailedAttempts`, or clear it immediately from
+    **Admin → Users → Unlock account** (removes the recent failed-attempt
+    records for that email).
   - *Sign-in blocked: … stuffing / impossible travel* — genuine attack signals;
     investigate the IP before unblocking anything.
 - **Admin accounts are never locked out** by failed password attempts — the

@@ -9,6 +9,7 @@ import {
   Eye,
   KeyRound,
   Loader2,
+  LockOpen,
   MailCheck,
   MailX,
   ShieldOff,
@@ -202,6 +203,29 @@ export default function UsersTable() {
       }
       toast.success(`Password updated for ${user.email}`);
       setPasswordOpen(false);
+    });
+  };
+
+  const handleUnlock = async (user: AdminUser) => {
+    await runAction(`unlock:${user.id}`, async () => {
+      const res = await fetch("/api/admin/unlock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        cleared?: number;
+        error?: string;
+      } | null;
+      if (!res.ok) {
+        toast.error(data?.error ?? "Failed to unlock account");
+        return;
+      }
+      toast.success(
+        (data?.cleared ?? 0) > 0
+          ? `Account unlocked — cleared ${data?.cleared} failed attempt(s)`
+          : "Account is not locked",
+      );
     });
   };
 
@@ -473,6 +497,12 @@ export default function UsersTable() {
                               setPasswordOpen(true);
                             },
                             disabled: rowBusy,
+                          },
+                          {
+                            label: "Unlock account",
+                            icon: <LockOpen className="size-4" />,
+                            onClick: () => handleUnlock(user),
+                            disabled: busy === `unlock:${user.id}`,
                           },
                           {
                             label: "Impersonate",
