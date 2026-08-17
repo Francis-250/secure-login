@@ -9,6 +9,8 @@ import {
   ArrowLeft,
   Ban,
   Loader2,
+  MailCheck,
+  MailX,
   MonitorSmartphone,
   ShieldOff,
   Trash2,
@@ -157,6 +159,26 @@ export default function UserDetail({ userId }: { userId: string }) {
     });
   };
 
+  const handleToggleEmailVerified = async (verified: boolean) => {
+    if (!user) return;
+    await runAction(`verify:${user.id}`, async () => {
+      const { error } = await authClient.admin.updateUser({
+        userId: user.id,
+        data: { emailVerified: verified },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(
+        verified
+          ? `Email verified for ${user.email}`
+          : `Email marked unverified for ${user.email}`,
+      );
+      fetchUser();
+    });
+  };
+
   const handleDelete = async () => {
     if (!user) return;
     await runAction(`delete:${user.id}`, async () => {
@@ -287,6 +309,27 @@ export default function UserDetail({ userId }: { userId: string }) {
           >
             Set password
           </button>
+          {user.emailVerified ? (
+            <button
+              type="button"
+              onClick={() => handleToggleEmailVerified(false)}
+              disabled={busy === `verify:${user.id}`}
+              className={actionBtnClass}
+            >
+              <MailX className="size-3.5" />
+              Unverify email
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleToggleEmailVerified(true)}
+              disabled={busy === `verify:${user.id}`}
+              className={actionBtnClass}
+            >
+              <MailCheck className="size-3.5" />
+              Verify email
+            </button>
+          )}
           {user.banned ? (
             <button
               type="button"

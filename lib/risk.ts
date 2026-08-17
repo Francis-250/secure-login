@@ -227,9 +227,9 @@ async function assessWithGroq(
     const score = clamp01(Number(result.score) || 0);
     const level: RiskLevel =
       score >= 0.7 ? "high" : score >= 0.4 ? "medium" : "low";
-    const reasons = (Array.isArray(result.reasons) ? result.reasons : []).filter(
-      (r): r is string => typeof r === "string" && r.length > 0,
-    );
+    const reasons = (
+      Array.isArray(result.reasons) ? result.reasons : []
+    ).filter((r): r is string => typeof r === "string" && r.length > 0);
 
     if (reasons.length === 0) return null;
 
@@ -243,11 +243,7 @@ async function assessWithGroq(
 export async function evaluateRisk(ctx: AttemptContext): Promise<RiskResult> {
   const signals = await collectSignals(ctx);
   const settings = await getSettings();
-  const heuristic = heuristicScore(
-    ctx,
-    signals,
-    settings.maxFailedAttempts,
-  );
+  const heuristic = heuristicScore(ctx, signals, settings.maxFailedAttempts);
 
   if (heuristic.level === "high") return heuristic;
 

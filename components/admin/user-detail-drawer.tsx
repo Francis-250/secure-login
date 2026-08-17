@@ -3,7 +3,13 @@
 import { authClient } from "@/lib/auth-client";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, MonitorSmartphone, ShieldCheck } from "lucide-react";
+import {
+  Loader2,
+  MailCheck,
+  MailX,
+  MonitorSmartphone,
+  ShieldCheck,
+} from "lucide-react";
 import { actionBtnClass } from "@/components/admin/users-table";
 
 export type AdminUser = {
@@ -134,6 +140,28 @@ export default function UserDetailDrawer({
     });
   };
 
+  const handleToggleEmailVerified = async (verified: boolean) => {
+    if (!detail) return;
+    await runAction(`verify:${detail.id}`, async () => {
+      const { error } = await authClient.admin.updateUser({
+        userId: detail.id,
+        data: { emailVerified: verified },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(
+        verified
+          ? `Email verified for ${detail.email}`
+          : `Email marked unverified for ${detail.email}`,
+      );
+      const updated = { ...detail, emailVerified: verified };
+      setDetail(updated);
+      onUserChanged?.(updated);
+    });
+  };
+
   if (!detail) {
     return <p className="text-sm text-slate-500">Loading user…</p>;
   }
@@ -212,6 +240,31 @@ export default function UserDetailDrawer({
               <option value="user">user</option>
               <option value="admin">admin</option>
             </select>
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase text-slate-500 dark:text-slate-400">
+            Email verification
+          </dt>
+          <dd className="mt-1">
+            <button
+              type="button"
+              onClick={() => handleToggleEmailVerified(!detail.emailVerified)}
+              disabled={busy === `verify:${detail.id}`}
+              className={actionBtnClass}
+            >
+              {detail.emailVerified ? (
+                <>
+                  <MailX className="size-3.5" />
+                  Mark unverified
+                </>
+              ) : (
+                <>
+                  <MailCheck className="size-3.5" />
+                  Mark verified
+                </>
+              )}
+            </button>
           </dd>
         </div>
         <div>

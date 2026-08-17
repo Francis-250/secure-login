@@ -9,6 +9,8 @@ import {
   Eye,
   KeyRound,
   Loader2,
+  MailCheck,
+  MailX,
   ShieldOff,
   Trash2,
   UserPlus,
@@ -131,6 +133,28 @@ export default function UsersTable() {
     });
   };
 
+  const handleToggleEmailVerified = async (
+    user: AdminUser,
+    verified: boolean,
+  ) => {
+    await runAction(`verify:${user.id}`, async () => {
+      const { error } = await authClient.admin.updateUser({
+        userId: user.id,
+        data: { emailVerified: verified },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(
+        verified
+          ? `Email verified for ${user.email}`
+          : `Email marked unverified for ${user.email}`,
+      );
+      fetchUsers();
+    });
+  };
+
   const handleBan = async (
     user: AdminUser,
     reason: string,
@@ -202,6 +226,7 @@ export default function UsersTable() {
         name: data.name,
         password: data.password,
         role: data.role as "user" | "admin",
+        data: { emailVerified: true },
       });
       if (error) {
         toast.error(error.message);
@@ -424,6 +449,21 @@ export default function UsersTable() {
                                 },
                                 disabled: rowBusy,
                                 danger: true,
+                              },
+                          user.emailVerified
+                            ? {
+                                label: "Unverify email",
+                                icon: <MailX className="size-4" />,
+                                onClick: () =>
+                                  handleToggleEmailVerified(user, false),
+                                disabled: busy === `verify:${user.id}`,
+                              }
+                            : {
+                                label: "Verify email",
+                                icon: <MailCheck className="size-4" />,
+                                onClick: () =>
+                                  handleToggleEmailVerified(user, true),
+                                disabled: busy === `verify:${user.id}`,
                               },
                           {
                             label: "Set password",
