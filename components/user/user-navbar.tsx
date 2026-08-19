@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { href: "/user/security", label: "Security" },
   { href: "/user/sessions", label: "Sessions" },
   { href: "/user/activity", label: "Activity" },
+  { href: "/user/messages", label: "Messages" },
 ];
 
 export default function UserNavbar({ name, email, image }: UserNavbarProps) {

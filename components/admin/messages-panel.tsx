@@ -50,6 +50,8 @@ export default function MessagesPanel({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const threadEndRef = useRef<HTMLDivElement>(null);
+  const { data: session } = authClient.useSession();
+  const myId = session?.user?.id;
 
   const fetchUsers = useCallback(async () => {
     const { data, error } = await authClient.admin.listUsers({
@@ -117,13 +119,17 @@ export default function MessagesPanel({
   const thread = useMemo(
     () =>
       messages
-        .filter((m) => m.recipientId === selectedId)
+        .filter(
+          (m) => m.recipientId === selectedId || m.senderId === selectedId,
+        )
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
     [messages, selectedId],
   );
 
   const countFor = (userId: string) =>
-    messages.filter((m) => m.recipientId === userId).length;
+    messages.filter(
+      (m) => m.recipientId === userId || m.senderId === userId,
+    ).length;
 
   const handleSend = async () => {
     if (!selectedId) return;
@@ -254,41 +260,50 @@ export default function MessagesPanel({
               </div>
 
               <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-4">
-                {thread.map((m) => (
-                  <div key={m.id} className="flex justify-end">
+                {thread.map((m) => {
+                  const fromAdmin = m.senderId === myId;
+                  return (
                     <div
-                      className={`max-w-[78%] rounded-lg rounded-tr-none px-3 py-2 shadow-sm ${
-                        m.status === "failed"
-                          ? "bg-red-50 dark:bg-red-950"
-                          : "bg-[#d9fdd3] dark:bg-[#005c4b]"
-                      }`}
+                      key={m.id}
+                      className={`flex ${fromAdmin ? "justify-end" : "justify-start"}`}
                     >
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-                        {m.subject}
-                      </p>
-                      <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-100">
-                        {m.body}
-                      </p>
-                      <div className="mt-1 flex items-center justify-end gap-1">
-                        <span className="text-[11px] text-slate-600 dark:text-slate-300">
-                          {new Date(m.createdAt).toLocaleString([], {
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                        {m.status === "failed" ? (
-                          <span className="text-[11px] font-medium text-red-600 dark:text-red-400">
-                            Not delivered
+                      <div
+                        className={`max-w-[78%] rounded-lg px-3 py-2 shadow-sm ${
+                          fromAdmin
+                            ? m.status === "failed"
+                              ? "rounded-tr-none bg-red-50 dark:bg-red-950"
+                              : "rounded-tr-none bg-[#d9fdd3] dark:bg-[#005c4b]"
+                            : "rounded-tl-none bg-white dark:bg-neutral-800"
+                        }`}
+                      >
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                          {m.subject}
+                        </p>
+                        <p className="mt-0.5 whitespace-pre-wrap text-sm text-slate-800 dark:text-slate-100">
+                          {m.body}
+                        </p>
+                        <div className="mt-1 flex items-center justify-end gap-1">
+                          <span className="text-[11px] text-slate-600 dark:text-slate-300">
+                            {new Date(m.createdAt).toLocaleString([], {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
-                        ) : (
-                          <MailCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                        )}
+                          {fromAdmin &&
+                            (m.status === "failed" ? (
+                              <span className="text-[11px] font-medium text-red-600 dark:text-red-400">
+                                Not delivered
+                              </span>
+                            ) : (
+                              <MailCheck className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                            ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={threadEndRef} />
               </div>
 
