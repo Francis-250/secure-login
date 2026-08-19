@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
 
-  if (!session || session.user.role !== "admin") {
+  if (!session || session.user.role !== "operator") {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

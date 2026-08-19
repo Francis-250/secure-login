@@ -31,6 +31,11 @@ export default function Callbacks() {
         return;
       }
 
+      if (role === "operator") {
+        router.push("/operator/users");
+        return;
+      }
+
       router.push("/user");
     };
 

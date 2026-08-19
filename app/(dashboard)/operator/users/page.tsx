@@ -1,11 +1,11 @@
 import UsersTable from "@/components/admin/users-table";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { guardRole, ADMIN_ONLY_ROLES } from "@/lib/roles";
+import { guardRole, OPERATOR_ROLES } from "@/lib/roles";
 
-export default async function AdminUsersPage() {
+export default async function OperatorUsersPage() {
   const session = await auth.api.getSession({ headers: await headers() });
-  guardRole(session?.user.role, ADMIN_ONLY_ROLES, "/operator/users");
+  guardRole(session?.user.role, OPERATOR_ROLES, "/admin");
 
   return <UsersTable />;
 }

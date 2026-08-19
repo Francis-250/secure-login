@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
+import { isAdminAreaRole } from "@/lib/roles";
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session || session.user.role !== "admin") {
+  if (!session || !isAdminAreaRole(session.user.role)) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 

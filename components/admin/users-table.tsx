@@ -64,6 +64,9 @@ export default function UsersTable() {
 
   const { data: session } = authClient.useSession();
   const impersonating = session?.session?.impersonatedBy;
+  const currentRole = session?.user?.role;
+  const canManageRoles = currentRole === "admin";
+  const canImpersonate = currentRole === "admin";
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -96,9 +99,7 @@ export default function UsersTable() {
   }, [fetchUsers]);
 
   const visibleUsers = bannedFilter
-    ? users.filter((u) =>
-        bannedFilter === "banned" ? u.banned : !u.banned,
-      )
+    ? users.filter((u) => (bannedFilter === "banned" ? u.banned : !u.banned))
     : users;
 
   const runAction = async (key: string, fn: () => Promise<void>) => {
@@ -117,9 +118,7 @@ export default function UsersTable() {
   };
 
   const updateUserInList = useCallback((updated: AdminUser) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === updated.id ? updated : u)),
-    );
+    setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
   }, []);
 
   const handleUnban = async (user: AdminUser) => {
@@ -249,7 +248,7 @@ export default function UsersTable() {
         email: data.email,
         name: data.name,
         password: data.password,
-        role: data.role as "user" | "admin",
+        role: canManageRoles ? (data.role as "user" | "admin") : undefined,
         data: { emailVerified: true },
       });
       if (error) {
@@ -324,9 +323,7 @@ export default function UsersTable() {
           />
           <select
             value={searchField}
-            onChange={(e) =>
-              setSearchField(e.target.value as "email" | "name")
-            }
+            onChange={(e) => setSearchField(e.target.value as "email" | "name")}
             className="border-l border-slate-300 bg-slate-50 px-2 py-2 text-sm text-slate-700 outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-slate-200"
             aria-label="Search field"
           >
@@ -343,6 +340,7 @@ export default function UsersTable() {
         >
           <option value="">All roles</option>
           <option value="admin">Admin</option>
+          <option value="operator">Operator</option>
           <option value="user">User</option>
         </select>
 
@@ -504,12 +502,16 @@ export default function UsersTable() {
                             onClick: () => handleUnlock(user),
                             disabled: busy === `unlock:${user.id}`,
                           },
-                          {
-                            label: "Impersonate",
-                            icon: <UserRoundCog className="size-4" />,
-                            onClick: () => handleImpersonate(user),
-                            disabled: busy === `impersonate:${user.id}`,
-                          },
+                          ...(canImpersonate
+                            ? [
+                                {
+                                  label: "Impersonate",
+                                  icon: <UserRoundCog className="size-4" />,
+                                  onClick: () => handleImpersonate(user),
+                                  disabled: busy === `impersonate:${user.id}`,
+                                },
+                              ]
+                            : []),
                           {
                             label: "Delete",
                             icon: <Trash2 className="size-4" />,
@@ -558,6 +560,7 @@ export default function UsersTable() {
       >
         <CreateUserForm
           busy={busy === "create-user"}
+          canManageRoles={canManageRoles}
           onSubmit={handleCreateUser}
         />
       </Drawer>
@@ -656,9 +659,11 @@ export default function UsersTable() {
 
 function CreateUserForm({
   busy,
+  canManageRoles,
   onSubmit,
 }: {
   busy: boolean;
+  canManageRoles: boolean;
   onSubmit: (data: CreateUserData) => void;
 }) {
   const [form, setForm] = useState<CreateUserData>({
@@ -715,26 +720,35 @@ function CreateUserForm({
           placeholder="At least 8 characters"
         />
       </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
-          Role
-        </label>
-        <select
-          value={form.role}
-          onChange={(e) => setForm({ ...form, role: e.target.value })}
-          className={inputClass}
-        >
-          <option value="user">user</option>
-          <option value="admin">admin</option>
-        </select>
-      </div>
+      {canManageRoles ? (
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Role
+          </label>
+          <select
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+            className={inputClass}
+          >
+            <option value="user">user</option>
+            <option value="operator">operator</option>
+            <option value="admin">admin</option>
+          </select>
+        </div>
+      ) : (
+        <></>
+      )}
       <div className="flex justify-end gap-2 pt-2">
         <button
           type="submit"
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
         >
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
+          {busy ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <UserPlus className="size-4" />
+          )}
           Create user
         </button>
       </div>
@@ -766,7 +780,10 @@ export function BanForm({
       onSubmit={(e) => {
         e.preventDefault();
         const seconds = durationSeconds[duration];
-        onSubmit(reason, seconds === undefined || seconds === -1 ? undefined : seconds);
+        onSubmit(
+          reason,
+          seconds === undefined || seconds === -1 ? undefined : seconds,
+        );
       }}
       className="space-y-4"
     >
@@ -805,7 +822,11 @@ export function BanForm({
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
         >
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <Ban className="size-4" />}
+          {busy ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Ban className="size-4" />
+          )}
           Confirm ban
         </button>
       </div>
@@ -867,7 +888,11 @@ export function PasswordForm({
           disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
         >
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+          {busy ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <KeyRound className="size-4" />
+          )}
           Save password
         </button>
       </div>

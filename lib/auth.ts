@@ -12,17 +12,18 @@ import {
   twoFactor,
   username,
 } from "better-auth/plugins";
+import { adminAc, defaultAc, userAc } from "better-auth/plugins/admin/access";
 import { sendEmail } from "./brevo";
 import { evaluateRisk, logLoginAttempt } from "./risk";
 import { getSettings } from "./settings";
 
-function extractRequestInfo(ctx: {
-  request?: Request;
-}) {
+function extractRequestInfo(ctx: { request?: Request }) {
   const headers = ctx.request?.headers;
   const userAgent = headers?.get("user-agent") ?? null;
   const xff = headers?.get("x-forwarded-for");
-  const ipAddress = xff ? xff.split(",")[0].trim() : headers?.get("x-real-ip") ?? null;
+  const ipAddress = xff
+    ? xff.split(",")[0].trim()
+    : (headers?.get("x-real-ip") ?? null);
   const country =
     headers?.get("cf-ipcountry") ?? headers?.get("x-vercel-ip-country") ?? null;
   const city = headers?.get("x-vercel-ip-city") ?? null;
@@ -56,7 +57,26 @@ export const auth = betterAuth({
   plugins: [
     username(),
     phoneNumber(),
-    admin(),
+    admin({
+      adminRoles: ["admin", "operator"],
+      roles: {
+        admin: adminAc,
+        operator: defaultAc.newRole({
+          user: [
+            "create",
+            "list",
+            "ban",
+            "delete",
+            "set-password",
+            "set-email",
+            "get",
+            "update",
+          ],
+          session: ["list", "revoke", "delete"],
+        }),
+        user: userAc,
+      },
+    }),
     lastLoginMethod(),
     emailOTP({
       otpLength: 6,
@@ -203,12 +223,14 @@ export const auth = betterAuth({
             ...info,
           });
 
-          if (!failed && risk.action === "challenge" && !user?.twoFactorEnabled) {
+          if (
+            !failed &&
+            risk.action === "challenge" &&
+            !user?.twoFactorEnabled
+          ) {
             const token = (returned as { token?: string } | undefined)?.token;
             if (token) {
-              await prisma.session
-                .delete({ where: { token } })
-                .catch(() => {});
+              await prisma.session.delete({ where: { token } }).catch(() => {});
             }
 
             await logLoginAttempt({
@@ -235,8 +257,7 @@ export const auth = betterAuth({
             ...info,
             success: !failed,
             riskScore: risk.score,
-            riskReason:
-              risk.level === "low" ? null : risk.reasons.join("; "),
+            riskReason: risk.level === "low" ? null : risk.reasons.join("; "),
           });
           return;
         }

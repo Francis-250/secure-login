@@ -1,10 +1,16 @@
 import SettingsManager from "@/components/admin/settings-manager";
 import TwoFactorManager from "@/components/auth/two-factor-manager";
 import { getAiRequestCount, getSettings } from "@/lib/settings";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { guardRole, ADMIN_ONLY_ROLES } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  guardRole(session?.user.role, ADMIN_ONLY_ROLES, "/operator/users");
+
   const [settings, aiRequestCount] = await Promise.all([
     getSettings(),
     getAiRequestCount(),

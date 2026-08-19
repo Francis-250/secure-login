@@ -7,6 +7,9 @@ import {
   Users,
 } from "lucide-react";
 import RiskChart from "@/components/admin/admin-charts";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { guardRole, ROLES } from "@/lib/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +23,9 @@ function scoreColor(score: number | null): string {
 const CHART_DAYS = 14;
 
 export default async function AdminDashboardPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  guardRole(session?.user.role, [ROLES.ADMIN], "/operator/users");
+
   const now = new Date();
   const chartSince = new Date(now.getTime() - CHART_DAYS * 86_400_000);
 
@@ -91,7 +97,6 @@ export default async function AdminDashboardPage() {
     {
       label: "Active sessions",
       value: totalSessions,
-      href: "/admin/sessions",
       icon: MonitorSmartphone,
     },
     {
@@ -103,7 +108,7 @@ export default async function AdminDashboardPage() {
     {
       label: "High-risk attempts",
       value: highRiskAttempts,
-      href: "/admin/risk",
+      href: "/admin/report",
       icon: ShieldAlert,
     },
   ];
@@ -122,20 +127,33 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
-          return (
+          const inner = (
+            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+              <Icon className="size-4" />
+              <span className="text-sm font-medium">{stat.label}</span>
+            </div>
+          );
+          return stat.href ? (
             <Link
               key={stat.label}
               href={stat.href}
               className="rounded-lg border border-slate-300 bg-white p-5 transition-colors hover:border-blue-600 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-blue-500"
             >
-              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                <Icon className="size-4" />
-                <span className="text-sm font-medium">{stat.label}</span>
-              </div>
+              {inner}
               <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-50">
                 {stat.value}
               </p>
             </Link>
+          ) : (
+            <div
+              key={stat.label}
+              className="rounded-lg border border-slate-300 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              {inner}
+              <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-50">
+                {stat.value}
+              </p>
+            </div>
           );
         })}
       </div>
@@ -148,10 +166,10 @@ export default async function AdminDashboardPage() {
             Recent login attempts
           </h2>
           <Link
-            href="/admin/risk"
+            href="/admin/report"
             className="text-sm font-medium text-blue-700 hover:underline dark:text-blue-500"
           >
-            View risk log
+            View report
           </Link>
         </div>
         <div className="overflow-x-auto">

@@ -2,7 +2,7 @@
 
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -48,6 +48,9 @@ type UserSession = {
 
 export default function UserDetail({ userId }: { userId: string }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const basePath = pathname.startsWith("/operator") ? "/operator" : "/admin";
+  const usersPath = `${basePath}/users`;
   const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -57,6 +60,10 @@ export default function UserDetail({ userId }: { userId: string }) {
   const [banOpen, setBanOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const { data: session } = authClient.useSession();
+  const canManageRoles = session?.user?.role === "admin";
+  const canImpersonate = session?.user?.role === "admin";
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
@@ -188,7 +195,7 @@ export default function UserDetail({ userId }: { userId: string }) {
         return;
       }
       toast.success(`Deleted ${user.email}`);
-      router.push("/admin/users");
+      router.push(usersPath);
     });
   };
 
@@ -267,7 +274,7 @@ export default function UserDetail({ userId }: { userId: string }) {
         <p className="text-slate-500 dark:text-slate-400">
           User not found or you do not have permission to view them.
         </p>
-        <Link href="/admin/users" className="mt-4 inline-block text-blue-700 hover:underline dark:text-blue-500">
+        <Link href={usersPath} className="mt-4 inline-block text-blue-700 hover:underline dark:text-blue-500">
           Back to users
         </Link>
       </div>
@@ -285,7 +292,7 @@ export default function UserDetail({ userId }: { userId: string }) {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href="/admin/users"
+          href={usersPath}
           className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-50"
         >
           <ArrowLeft className="size-4" />
@@ -351,15 +358,17 @@ export default function UserDetail({ userId }: { userId: string }) {
               Ban
             </button>
           )}
-          <button
-            type="button"
-            onClick={handleImpersonate}
-            disabled={busy === `impersonate:${user.id}`}
-            className={actionBtnClass}
-          >
-            <UserRoundCog className="size-3.5" />
-            Impersonate
-          </button>
+          {canImpersonate && (
+            <button
+              type="button"
+              onClick={handleImpersonate}
+              disabled={busy === `impersonate:${user.id}`}
+              className={actionBtnClass}
+            >
+              <UserRoundCog className="size-3.5" />
+              Impersonate
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setDeleteOpen(true)}
@@ -431,17 +440,24 @@ export default function UserDetail({ userId }: { userId: string }) {
               Role
             </dt>
             <dd className="mt-1">
-              <select
-                value={user.role ?? "user"}
-                onChange={(e) =>
-                  handleSetRole(e.target.value as "user" | "admin")
-                }
-                disabled={busy === `role:${user.id}`}
-                className="rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-slate-200"
-              >
-                <option value="user">user</option>
-                <option value="admin">admin</option>
-              </select>
+              {canManageRoles ? (
+                <select
+                  value={user.role ?? "user"}
+                  onChange={(e) =>
+                    handleSetRole(e.target.value as "user" | "admin")
+                  }
+                  disabled={busy === `role:${user.id}`}
+                  className="rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-slate-200"
+                >
+                  <option value="user">user</option>
+                  <option value="operator">operator</option>
+                  <option value="admin">admin</option>
+                </select>
+              ) : (
+                <span className="text-sm text-slate-900 dark:text-slate-50">
+                  {user.role ?? "user"}
+                </span>
+              )}
             </dd>
           </div>
           <div>

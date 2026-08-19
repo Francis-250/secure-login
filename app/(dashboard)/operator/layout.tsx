@@ -1,9 +1,9 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import AdminShell from "@/components/admin/admin-shell";
+import OperatorShell from "@/components/admin/operator-shell";
 
-export default async function AdminLayout({
+export default async function OperatorLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -14,17 +14,21 @@ export default async function AdminLayout({
     redirect("/auth/login");
   }
 
-  if (session.user.role !== "admin") {
-    redirect("/operator/users");
+  if (session.user.role === "admin") {
+    redirect("/admin");
+  }
+
+  if (session.user.role !== "operator") {
+    redirect("/user");
   }
 
   return (
-    <AdminShell
+    <OperatorShell
       name={session.user.name}
       email={session.user.email}
       image={session.user.image}
     >
       {children}
-    </AdminShell>
+    </OperatorShell>
   );
 }

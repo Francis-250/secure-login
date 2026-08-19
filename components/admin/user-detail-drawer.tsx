@@ -48,6 +48,9 @@ export default function UserDetailDrawer({
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
 
+  const { data: session } = authClient.useSession();
+  const canManageRoles = session?.user?.role === "admin";
+
   useEffect(() => {
     let cancelled = false;
     authClient.admin
@@ -229,17 +232,24 @@ export default function UserDetailDrawer({
             Role
           </dt>
           <dd className="mt-1">
-            <select
-              value={detail.role ?? "user"}
-              onChange={(e) =>
-                handleSetRole(e.target.value as "user" | "admin")
-              }
-              disabled={busy === `role:${detail.id}`}
-              className="rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-slate-200"
-            >
-              <option value="user">user</option>
-              <option value="admin">admin</option>
-            </select>
+            {canManageRoles ? (
+              <select
+                value={detail.role ?? "user"}
+                onChange={(e) =>
+                  handleSetRole(e.target.value as "user" | "admin")
+                }
+                disabled={busy === `role:${detail.id}`}
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-sm text-slate-700 outline-none disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-slate-200"
+              >
+                <option value="user">user</option>
+                <option value="operator">operator</option>
+                <option value="admin">admin</option>
+              </select>
+            ) : (
+              <span className="text-sm text-slate-900 dark:text-slate-50">
+                {detail.role ?? "user"}
+              </span>
+            )}
           </dd>
         </div>
         <div>
