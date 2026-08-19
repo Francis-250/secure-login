@@ -433,7 +433,7 @@ export default function UsersTable() {
                       {user.banned ? "Banned" : "Active"}
                     </span>
                     {user.banned && user.banReason && (
-                      <span className="mt-1 block max-w-[160px] truncate text-xs text-slate-500 dark:text-slate-400">
+                      <span className="mt-1 block max-w-40 truncate text-xs text-slate-500 dark:text-slate-400">
                         {user.banReason}
                       </span>
                     )}

@@ -11,6 +11,7 @@ import {
   Loader2,
   MailCheck,
   MailX,
+  MessageSquare,
   MonitorSmartphone,
   ShieldOff,
   Trash2,
@@ -308,6 +309,18 @@ export default function UserDetail({ userId }: { userId: string }) {
             <MonitorSmartphone className="size-3.5" />
             Sessions
           </button>
+          {canManageRoles && (
+            <button
+              type="button"
+              onClick={() =>
+                router.push(`/admin/messages?userId=${user.id}`)
+              }
+              className={actionBtnClass}
+            >
+              <MessageSquare className="size-3.5" />
+              Message
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setPasswordOpen(true)}

@@ -28,6 +28,8 @@ model User {
   accounts            Account[]
   twofactors          TwoFactor[]
   loginAttempts       LoginAttempt[]
+  sentMessages        Message[]       @relation("MessageSender")
+  receivedMessages    Message[]       @relation("MessageRecipient")
 
   @@unique([email])
   @@unique([phoneNumber])
@@ -136,4 +138,22 @@ model LoginAttempt {
   @@index([ipAddress])
   @@index([createdAt])
   @@map("loginAttempt")
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  recipientId String
+  subject     String
+  body        String
+  status      String   @default("sent")
+  createdAt   DateTime @default(now())
+
+  sender    User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User @relation("MessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([createdAt])
+  @@map("message")
 }
