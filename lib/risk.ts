@@ -263,7 +263,7 @@ async function assessWithGroq(
       reasons: string[];
     };
     try {
-      result = (await structured.invoke(messages, {
+      result = (await structured.invoke(messages, { 
         signal: controller.signal,
       })) as { score: number; level: RiskLevel; reasons: string[] };
     } finally {
