@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       },
       include: USER_INCLUDE,
     })
-    .catch((error) => {
+    .catch((error: unknown) => {
       console.error("Failed to save user reply:", error);
       return null;
     });
